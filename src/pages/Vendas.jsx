@@ -7,6 +7,11 @@ const CARD = '#1A1A1A'
 const BORDER = '#2A2A2A'
 const GOLD = '#C9A84C'
 
+function normalizeName(name) {
+  if (!name) return ''
+  return name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/\s+/g, ' ').trim()
+}
+
 // Modal de Transferência de Lote
 function ModalTransferir({ lote, compradores, currentComprador, onClose, onSave }) {
   const [destino, setDestino] = useState('')
@@ -345,14 +350,37 @@ function ModalNovaVenda({ clientes, lotesDisponiveis, vendas, onClose, onSave })
     setLotesSelecionados(lotesSelecionados.filter(l => l.lote !== loteNum))
   }
 
+  // Merge spiti_clientes + distinct buyers em spiti_vendas (ghosts) — dedup por nome normalizado
+  const clientesAtivos = useMemo(() => {
+    const clientesNormSet = new Set(clientesList.map(c => normalizeName(c.nome)))
+    const cadastrados = clientesList.map(c => ({ ...c, ghost: false }))
+    const ghostMap = new Map()
+    for (const v of (vendas || [])) {
+      const nome = (v.comprador_nome || '').trim()
+      if (!nome || nome === 'PENDENTE') continue
+      const norm = normalizeName(nome)
+      if (clientesNormSet.has(norm)) continue
+      if (!ghostMap.has(norm)) ghostMap.set(norm, { nome })
+    }
+    const ghosts = Array.from(ghostMap.values()).map(g => ({
+      id: null, nome: g.nome, ghost: true, telefone: null, email: null, cartela: null
+    }))
+    return [...cadastrados, ...ghosts].sort((a, b) => (a.nome || '').localeCompare(b.nome || ''))
+  }, [clientesList, vendas])
+
+  // Chave estável para o <option>: id real ou "ghost:<nome-normalizado>"
+  function clienteKey(c) {
+    return c.id != null ? `id:${c.id}` : `ghost:${normalizeName(c.nome)}`
+  }
+
   async function handleCriar() {
     if (!cliente && !novoClienteNome) return
     if (lotesSelecionados.length === 0) return
-    
+
     setSaving(true)
-    const nomeCliente = cliente === 'novo' ? novoClienteNome : cliente
-    const clienteInfo = clientesList.find(c => c.id === cliente)
-    
+    const clienteInfo = cliente === 'novo' ? null : clientesAtivos.find(c => clienteKey(c) === cliente)
+    const nomeCliente = cliente === 'novo' ? novoClienteNome : clienteInfo?.nome || ''
+
     const vendasData = lotesSelecionados.map(loteInfo => ({
       leilao_id: 'spiti9',
       lote: loteInfo.lote,
@@ -366,14 +394,12 @@ function ModalNovaVenda({ clientes, lotesDisponiveis, vendas, onClose, onSave })
       notas: notas,
       lancado: false
     }))
-    
+
     await supabase.from('spiti_vendas').insert(vendasData)
-    
+
     onSave()
     onClose()
   }
-
-  const clientesAtivos = clientesList.length > 0 ? clientesList : clientes.filter(c => c.nome && c.nome !== 'PENDENTE')
   const lotesNaoVendidos = useMemo(() => {
     const lotesVendidos = new Set(vendas.map(v => v.lote))
     return lotesDisponiveis.filter(l => !lotesVendidos.has(l.lote) && !lotesSelecionados.some(s => s.lote === l.lote))
@@ -393,11 +419,16 @@ function ModalNovaVenda({ clientes, lotesDisponiveis, vendas, onClose, onSave })
               style={{ background: DARK, border: `1px solid ${BORDER}` }}
               className="w-full rounded-xl px-3 py-2 text-sm text-white">
               <option value="">Selecione...</option>
-              {clientesAtivos.map(c => (
-                <option key={c.id || c.nome} value={c.id || c.nome}>
-                  {c.nome} {c.telefone ? `• ${c.telefone}` : ''} {c.email ? `• ${c.email}` : ''}
-                </option>
-              ))}
+              {clientesAtivos.map(c => {
+                const key = clienteKey(c)
+                const extras = [c.telefone, c.email].filter(Boolean).join(' • ')
+                const suffix = c.ghost ? ' (não cadastrado)' : ''
+                return (
+                  <option key={key} value={key}>
+                    {c.nome}{extras ? ` • ${extras}` : ''}{suffix}
+                  </option>
+                )
+              })}
               <option value="novo">+ Novo cliente</option>
             </select>
           </div>

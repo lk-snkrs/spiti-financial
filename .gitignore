@@ -8,3 +8,4 @@ dist-ssr/
 .vercel/
 *.log
 npm-debug.log*
+package-lock.json

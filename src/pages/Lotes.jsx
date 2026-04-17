@@ -231,7 +231,7 @@ export default function Lotes() {
         </div>
       </div>
 
-      <div className="grid grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 lg:gap-4">
         <div className="bg-card border border-border rounded-xl p-4 card-hover">
           <div className="text-xs text-gray-500 mb-1">Total Lotes</div>
           <div className="text-xl font-bold text-white">{totais.total}</div>

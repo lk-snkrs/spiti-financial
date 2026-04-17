@@ -436,19 +436,19 @@ export default function Clientes() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
           <h1 className="text-xl font-bold text-white">Clientes</h1>
-          <p className="text-gray-500 text-sm">Compradores cadastrados e histórico de arremates</p>
+          <p className="text-gray-500 text-sm hidden sm:block">Compradores cadastrados e histórico de arremates</p>
         </div>
         <button onClick={() => setModalNovo(true)}
-          className="bg-gold text-black font-semibold px-4 py-2 rounded-xl text-sm hover:bg-gold-light transition-colors">
+          className="bg-gold text-black font-semibold px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm hover:bg-gold-light transition-colors whitespace-nowrap shrink-0">
           + Novo cliente
         </button>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
         <div className="bg-card border border-border rounded-xl p-4 card-hover">
           <div className="text-xs text-gray-500 mb-1">Total clientes</div>
           <div className="text-xl font-bold text-white">{totais.total}</div>
@@ -469,12 +469,12 @@ export default function Clientes() {
       </div>
 
       {/* Filters */}
-      <div className="flex gap-3 flex-wrap items-center">
-        <div className="relative">
+      <div className="flex gap-2 sm:gap-3 flex-wrap items-center">
+        <div className="relative flex-1 sm:flex-none min-w-[200px]">
           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-xs">🔍</span>
           <input value={busca} onChange={e => setBusca(e.target.value)}
-            placeholder="Buscar nome, CPF, email, cartela..."
-            className="bg-card border border-border rounded-xl pl-8 pr-4 py-2 text-sm text-white focus:border-gold/50 transition-colors w-72" />
+            placeholder="Buscar nome, CPF, email..."
+            className="bg-card border border-border rounded-xl pl-8 pr-4 py-2 text-sm text-white focus:border-gold/50 transition-colors w-full sm:w-72" />
         </div>
         <div className="flex gap-1 bg-card border border-border rounded-xl p-1">
           {[

@@ -421,7 +421,7 @@ export default function ContasPagar() {
         <p className="text-gray-500 text-sm">Pagamentos aos consignantes (libera após comprador quitar)</p>
       </div>
 
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
         {[
           { label: 'Total a Pagar', val: totais.total, color: 'text-gold' },
           { label: 'Liberado', val: totais.liberado, color: 'text-green-400', sub: 'compradores quitaram' },

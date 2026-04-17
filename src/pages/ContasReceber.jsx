@@ -149,7 +149,7 @@ export default function ContasReceber() {
         <p className="text-gray-500 text-sm">Cobranças por comprador com parcelas</p>
       </div>
 
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
         {[
           { label: 'Total a Cobrar', val: totais.total, color: 'text-gold' },
           { label: 'Recebido', val: totais.recebido, color: 'text-green-400' },

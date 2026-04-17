@@ -241,7 +241,7 @@ export default function Custos() {
         </button>
       </div>
 
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
         {[
           { label: 'Total de Custos', val: totais.total, color: 'text-red-400' },
           { label: 'Pago', val: totais.pago, color: 'text-green-400' },

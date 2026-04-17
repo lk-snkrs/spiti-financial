@@ -4,6 +4,16 @@ import { formatCurrency, calcularComissaoComprador } from '../lib/financeiro'
 
 const LEILAO_ID = 'spiti9'
 
+// Normaliza nome para dedup: trim, lowercase, remove acentos, colapsa espaços
+function normalizeName(name) {
+  if (!name) return ''
+  return name
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
 function ModalCliente({ cliente, onClose, onSave }) {
   const isEdit = Boolean(cliente?.id)
   const [form, setForm] = useState(() => ({
@@ -171,11 +181,13 @@ function ModalConfirmarExclusao({ cliente, vendasCount, onClose, onConfirm }) {
   )
 }
 
-function DrawerCliente({ cliente, vendas, lotes, cobrancas, onClose, onEdit, onDelete }) {
-  const vendasCliente = vendas.filter(v =>
-    v.comprador_id === cliente.id ||
-    (!v.comprador_id && v.comprador_nome && cliente.nome && v.comprador_nome.toLowerCase().trim() === cliente.nome.toLowerCase().trim())
-  )
+function DrawerCliente({ cliente, vendas, lotes, cobrancas, onClose, onEdit, onDelete, onCadastrar }) {
+  const isGhost = !cliente.id
+  const clienteNorm = normalizeName(cliente.nome)
+  const vendasCliente = vendas.filter(v => {
+    if (!isGhost && v.comprador_id === cliente.id) return true
+    return !v.comprador_id && v.comprador_nome && normalizeName(v.comprador_nome) === clienteNorm
+  })
 
   const lotesMap = useMemo(() => {
     const m = new Map()
@@ -214,24 +226,44 @@ function DrawerCliente({ cliente, vendas, lotes, cobrancas, onClose, onEdit, onD
         className="absolute top-0 right-0 h-full w-full max-w-2xl bg-card border-l border-border shadow-2xl overflow-y-auto animate-slide-up">
         <div className="p-6 space-y-6">
           {/* Header */}
-          <div className="flex items-start justify-between">
-            <div>
-              <h2 className="text-xl font-bold text-white">{cliente.nome}</h2>
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h2 className="text-xl font-bold text-white truncate">{cliente.nome}</h2>
+                {isGhost && (
+                  <span className="text-2xs px-2 py-0.5 rounded-full bg-orange-500/20 text-orange-400 whitespace-nowrap">
+                    Não cadastrado
+                  </span>
+                )}
+              </div>
               <p className="text-gray-500 text-xs mt-1">
-                {cliente.cartela ? `Cartela ${cliente.cartela}` : 'Sem cartela'}
-                {cliente.cpf ? ` • ${cliente.cpf}` : ''}
+                {isGhost ? 'Dados só em Vendas — cadastro incompleto' : (
+                  <>
+                    {cliente.cartela ? `Cartela ${cliente.cartela}` : 'Sem cartela'}
+                    {cliente.cpf ? ` • ${cliente.cpf}` : ''}
+                  </>
+                )}
               </p>
             </div>
-            <div className="flex gap-2">
-              <button onClick={onEdit}
-                className="px-3 py-1.5 bg-gold/10 text-gold border border-gold/30 rounded-lg text-xs font-medium hover:bg-gold/20 transition-colors">
-                Editar
-              </button>
-              <button onClick={onDelete}
-                className="px-3 py-1.5 bg-red-500/10 text-red-400 border border-red-500/30 rounded-lg text-xs font-medium hover:bg-red-500/20 transition-colors">
-                Excluir
-              </button>
-              <button onClick={onClose} className="text-gray-500 hover:text-white ml-2">✕</button>
+            <div className="flex gap-2 shrink-0">
+              {isGhost ? (
+                <button onClick={onCadastrar}
+                  className="px-3 py-1.5 bg-gold text-black rounded-lg text-xs font-semibold hover:bg-gold-light transition-colors">
+                  Cadastrar
+                </button>
+              ) : (
+                <>
+                  <button onClick={onEdit}
+                    className="px-3 py-1.5 bg-gold/10 text-gold border border-gold/30 rounded-lg text-xs font-medium hover:bg-gold/20 transition-colors">
+                    Editar
+                  </button>
+                  <button onClick={onDelete}
+                    className="px-3 py-1.5 bg-red-500/10 text-red-400 border border-red-500/30 rounded-lg text-xs font-medium hover:bg-red-500/20 transition-colors">
+                    Excluir
+                  </button>
+                </>
+              )}
+              <button onClick={onClose} className="text-gray-500 hover:text-white ml-1">✕</button>
             </div>
           </div>
 
@@ -355,23 +387,51 @@ export default function Clientes() {
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { load() }, [])
 
-  // Enrichment: conta lotes e arremate por cliente (via id OU nome)
+  // Enrichment: clientes cadastrados + "ghost" (compradores só em vendas)
   const clientesEnriquecidos = useMemo(() => {
-    return clientes.map(c => {
+    const clientesNormSet = new Set(clientes.map(c => normalizeName(c.nome)))
+
+    const cadastrados = clientes.map(c => {
+      const cNorm = normalizeName(c.nome)
       const vendasCliente = vendas.filter(v =>
         v.comprador_id === c.id ||
-        (!v.comprador_id && v.comprador_nome && c.nome && v.comprador_nome.toLowerCase().trim() === c.nome.toLowerCase().trim())
+        (!v.comprador_id && v.comprador_nome && normalizeName(v.comprador_nome) === cNorm)
       )
       const arremate = vendasCliente.reduce((s, v) => s + (v.valor_arremate || 0), 0)
       const comissao = vendasCliente.reduce((s, v) => s + calcularComissaoComprador(v.valor_arremate || 0), 0)
+      return { ...c, ghost: false, nLotes: vendasCliente.length, arremate, comissao, total: arremate + comissao }
+    })
+
+    // Agrupar vendas por nome normalizado, ignorando nomes já presentes em clientes
+    const ghostMap = new Map()
+    for (const v of vendas) {
+      const nome = (v.comprador_nome || '').trim()
+      if (!nome) continue
+      const norm = normalizeName(nome)
+      if (clientesNormSet.has(norm)) continue
+      if (!ghostMap.has(norm)) {
+        ghostMap.set(norm, { nome, vendas: [] })
+      }
+      ghostMap.get(norm).vendas.push(v)
+    }
+
+    const ghosts = Array.from(ghostMap.values()).map(g => {
+      const arremate = g.vendas.reduce((s, v) => s + (v.valor_arremate || 0), 0)
+      const comissao = g.vendas.reduce((s, v) => s + calcularComissaoComprador(v.valor_arremate || 0), 0)
       return {
-        ...c,
-        nLotes: vendasCliente.length,
+        id: null,
+        leilao_id: LEILAO_ID,
+        nome: g.nome,
+        cpf: null, endereco: null, email: null, telefone: null, cartela: null, notas: null,
+        ghost: true,
+        nLotes: g.vendas.length,
         arremate,
         comissao,
         total: arremate + comissao
       }
     })
+
+    return [...cadastrados, ...ghosts]
   }, [clientes, vendas])
 
   function toggleSort(col) {
@@ -383,6 +443,7 @@ export default function Clientes() {
     .filter(c => {
       if (filtroCompras === 'com' && c.nLotes === 0) return false
       if (filtroCompras === 'sem' && c.nLotes > 0) return false
+      if (filtroCompras === 'ghost' && !c.ghost) return false
       if (busca) {
         const q = busca.toLowerCase()
         const match = c.nome?.toLowerCase().includes(q) ||
@@ -405,10 +466,12 @@ export default function Clientes() {
 
   const totais = useMemo(() => {
     const comCompras = clientesEnriquecidos.filter(c => c.nLotes > 0)
+    const ghosts = clientesEnriquecidos.filter(c => c.ghost)
     return {
       total: clientesEnriquecidos.length,
       comCompras: comCompras.length,
-      semCompras: clientesEnriquecidos.length - comCompras.length,
+      ghosts: ghosts.length,
+      cadastrados: clientesEnriquecidos.length - ghosts.length,
       arremate: comCompras.reduce((s, c) => s + c.arremate, 0),
       comissao: comCompras.reduce((s, c) => s + c.comissao, 0)
     }
@@ -456,7 +519,10 @@ export default function Clientes() {
         <div className="bg-card border border-border rounded-xl p-4 card-hover">
           <div className="text-xs text-gray-500 mb-1">Compradores ativos</div>
           <div className="text-xl font-bold text-green-400">{totais.comCompras}</div>
-          <div className="text-2xs text-gray-600">{totais.semCompras} sem compras</div>
+          <div className="text-2xs text-gray-600">
+            {totais.cadastrados} cadastrados
+            {totais.ghosts > 0 && <span className="text-orange-400"> • {totais.ghosts} ghost</span>}
+          </div>
         </div>
         <div className="bg-card border border-border rounded-xl p-4 card-hover">
           <div className="text-xs text-gray-500 mb-1">Arremate total</div>
@@ -480,7 +546,8 @@ export default function Clientes() {
           {[
             { key: 'todos', label: 'Todos' },
             { key: 'com', label: 'Com compras' },
-            { key: 'sem', label: 'Sem compras' }
+            { key: 'sem', label: 'Sem compras' },
+            { key: 'ghost', label: 'Não cadastrados' }
           ].map(f => (
             <button key={f.key} onClick={() => setFiltroCompras(f.key)}
               className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
@@ -522,10 +589,19 @@ export default function Clientes() {
                 </td></tr>
               ) : (
                 filtered.map((c, i) => (
-                  <tr key={c.id}
+                  <tr key={c.id ?? `ghost:${normalizeName(c.nome)}`}
                     onClick={() => setSelecionado(c)}
                     className={`border-b border-border/40 transition-colors cursor-pointer hover:bg-white/[0.03] ${i % 2 !== 0 ? 'bg-white/[0.015]' : ''}`}>
-                    <td className="px-4 py-2 text-white font-medium truncate max-w-[200px]">{c.nome}</td>
+                    <td className="px-4 py-2 text-white font-medium max-w-[240px]">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="truncate">{c.nome}</span>
+                        {c.ghost && (
+                          <span className="text-2xs px-1.5 py-0.5 rounded-full bg-orange-500/20 text-orange-400 whitespace-nowrap shrink-0">
+                            não cadastrado
+                          </span>
+                        )}
+                      </div>
+                    </td>
                     <td className="px-4 py-2 text-gray-400 text-xs">
                       <div className="truncate max-w-[180px]">{c.email || '—'}</div>
                       <div className="text-gray-600">{c.telefone || '—'}</div>
@@ -558,7 +634,7 @@ export default function Clientes() {
       {editando && (
         <ModalCliente cliente={editando}
           onClose={() => setEditando(null)}
-          onSave={() => { load(); setSelecionado(s => s ? { ...s, ...editando } : s) }} />
+          onSave={() => { load(); setSelecionado(null) }} />
       )}
       {selecionado && !editando && !excluindo && (
         <DrawerCliente
@@ -568,7 +644,8 @@ export default function Clientes() {
           cobrancas={cobrancas}
           onClose={() => setSelecionado(null)}
           onEdit={() => setEditando(selecionado)}
-          onDelete={() => setExcluindo(selecionado)} />
+          onDelete={() => setExcluindo(selecionado)}
+          onCadastrar={() => setEditando(selecionado)} />
       )}
       {excluindo && (
         <ModalConfirmarExclusao

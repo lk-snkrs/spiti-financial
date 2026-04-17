@@ -320,10 +320,10 @@ function ModalNovaVenda({ clientes, lotesDisponiveis, vendas, onClose, onSave })
   const [lotesSelecionados, setLotesSelecionados] = useState([])
   const [origem, setOrigem] = useState('leiloesbr')
   const [valorArremate, setValorArremate] = useState('')
-  const [comissaoCompradorPct, setComissaoCompradorPct] = useState('')
-  const [comissaoConsignantePct, setComissaoConsignantePct] = useState('')
+  const [valorConsignante, setValorConsignante] = useState('')
   const [notas, setNotas] = useState('')
   const [saving, setSaving] = useState(false)
+  const [erro, setErro] = useState(null)
   const [clientesList, setClientesList] = useState([])
 
   // Carregar clientes da tabela spiti_clientes
@@ -374,8 +374,21 @@ function ModalNovaVenda({ clientes, lotesDisponiveis, vendas, onClose, onSave })
   }
 
   async function handleCriar() {
+    setErro(null)
     if (!cliente && !novoClienteNome) return
     if (lotesSelecionados.length === 0) return
+    const valorNum = parseFloat(valorArremate)
+    if (!valorArremate || !(valorNum > 0)) {
+      setErro('Informe o valor do arremate')
+      return
+    }
+    if (isPosLeilao && valorConsignante !== '') {
+      const vc = parseFloat(valorConsignante)
+      if (!(vc >= 0) || vc > valorNum) {
+        setErro('Valor ao consignante deve estar entre 0 e o valor do arremate')
+        return
+      }
+    }
 
     setSaving(true)
     const clienteInfo = cliente === 'novo' ? null : clientesAtivos.find(c => clienteKey(c) === cliente)
@@ -388,14 +401,33 @@ function ModalNovaVenda({ clientes, lotesDisponiveis, vendas, onClose, onSave })
       comprador_nome: nomeCliente,
       comprador_id: clienteInfo?.id || null,
       comprador_cartela: clienteInfo?.cartela || null,
-      valor_arremate: parseFloat(valorArremate) || loteInfo.valor_base || 0,
+      valor_arremate: valorNum,
       data_venda: new Date().toISOString().split('T')[0],
       origem: origem,
       notas: notas,
       lancado: false
     }))
 
-    await supabase.from('spiti_vendas').insert(vendasData)
+    const { error: errInsert } = await supabase.from('spiti_vendas').insert(vendasData)
+    if (errInsert) {
+      setErro(errInsert.message)
+      setSaving(false)
+      return
+    }
+
+    // Pós-leilão com valor ao consignante customizado → atualiza comissao_consignante_pct no lote
+    if (isPosLeilao && valorConsignante !== '' && valorNum > 0) {
+      const vc = parseFloat(valorConsignante)
+      const pct = Math.round(((valorNum - vc) / valorNum) * 10000) / 100 // 2 casas decimais
+      await Promise.all(
+        lotesSelecionados.map(l =>
+          supabase.from('spiti_lotes_financeiro')
+            .update({ comissao_consignante_pct: pct })
+            .eq('leilao_id', 'spiti9')
+            .eq('lote', l.lote)
+        )
+      )
+    }
 
     onSave()
     onClose()
@@ -499,38 +531,33 @@ function ModalNovaVenda({ clientes, lotesDisponiveis, vendas, onClose, onSave })
             </select>
           </div>
 
-          {/* Campos pós-leilão */}
+          {/* Valor do Arremate (obrigatório pra ambas as origens) */}
+          <div>
+            <label className="text-xs text-gray-400 block mb-1.5">Valor do Arremate (R$) *</label>
+            <input type="number" value={valorArremate} onChange={e => setValorArremate(e.target.value)}
+              style={{ background: DARK, border: `1px solid ${BORDER}` }}
+              className="w-full rounded-xl px-3 py-2 text-sm text-white"
+              placeholder="0" />
+          </div>
+
+          {/* Bloco pós-leilão: valor ao consignante */}
           {isPosLeilao && (
-            <>
-              <div style={{ background: '#C9A84C20', border: `1px solid ${GOLD}40` }} className="rounded-xl p-3 space-y-3">
-                <p className="text-xs" style={{ color: GOLD }}>🏷️ Venda Pós-Leilão — Comissões customizáveis</p>
-                
-                <div>
-                  <label className="text-xs text-gray-400 block mb-1">Valor do Arremate (R$) *</label>
-                  <input type="number" value={valorArremate} onChange={e => setValorArremate(e.target.value)}
-                    style={{ background: DARK, border: `1px solid ${BORDER}` }}
-                    className="w-full rounded-xl px-3 py-2 text-sm text-white"
-                    placeholder="0" />
-                </div>
-                
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className="text-xs text-gray-400 block mb-1">Comissão Comprador (%)</label>
-                    <input type="number" value={comissaoCompradorPct} onChange={e => setComissaoCompradorPct(e.target.value)}
-                      style={{ background: DARK, border: `1px solid ${BORDER}` }}
-                      className="w-full rounded-xl px-3 py-2 text-sm text-white"
-                      placeholder="Padrão: 10%" />
-                  </div>
-                  <div>
-                    <label className="text-xs text-gray-400 block mb-1">Comissão Consignante (%)</label>
-                    <input type="number" value={comissaoConsignantePct} onChange={e => setComissaoConsignantePct(e.target.value)}
-                      style={{ background: DARK, border: `1px solid ${BORDER}` }}
-                      className="w-full rounded-xl px-3 py-2 text-sm text-white"
-                      placeholder="Do lote" />
-                  </div>
-                </div>
+            <div style={{ background: '#C9A84C20', border: `1px solid ${GOLD}40` }} className="rounded-xl p-3 space-y-2">
+              <p className="text-xs" style={{ color: GOLD }}>🏷️ Pós-Leilão — Repasse ao consignante</p>
+              <div>
+                <label className="text-xs text-gray-400 block mb-1">Valor ao Consignante (R$)</label>
+                <input type="number" value={valorConsignante} onChange={e => setValorConsignante(e.target.value)}
+                  style={{ background: DARK, border: `1px solid ${BORDER}` }}
+                  className="w-full rounded-xl px-3 py-2 text-sm text-white"
+                  placeholder="Deixe vazio para usar o % padrão do lote" />
               </div>
-            </>
+              {valorArremate && valorConsignante && parseFloat(valorArremate) > 0 && (
+                <div className="text-2xs text-gray-400 grid grid-cols-2 gap-2 pt-1">
+                  <span>Comissão SPITI: <span className="text-white font-mono">{formatCurrency(parseFloat(valorArremate) - parseFloat(valorConsignante || 0))}</span></span>
+                  <span>% consignante: <span className="text-white font-mono">{(((parseFloat(valorArremate) - parseFloat(valorConsignante || 0)) / parseFloat(valorArremate)) * 100).toFixed(2)}%</span></span>
+                </div>
+              )}
+            </div>
           )}
 
           {/* Notas */}
@@ -543,8 +570,14 @@ function ModalNovaVenda({ clientes, lotesDisponiveis, vendas, onClose, onSave })
           </div>
         </div>
 
+        {erro && (
+          <div className="mt-4 text-xs text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
+            {erro}
+          </div>
+        )}
+
         <div className="flex gap-3 mt-5">
-          <button onClick={handleCriar} disabled={saving || (!cliente && !novoClienteNome) || lotesSelecionados.length === 0}
+          <button onClick={handleCriar} disabled={saving || (!cliente && !novoClienteNome) || lotesSelecionados.length === 0 || !valorArremate}
             style={{ background: GOLD }}
             className="flex-1 text-black font-semibold py-2.5 rounded-xl text-sm disabled:opacity-50">
             {saving ? 'Criando...' : `Criar Venda (${lotesSelecionados.length} lote${lotesSelecionados.length !== 1 ? 's' : ''})`}

@@ -66,8 +66,8 @@ export default function Dashboard() {
 
   // ── Totais ──────────────────────────────────────────────────────────────────
   const totalArremate = vendas.reduce((s, v) => s + (v.valor_arremate || 0), 0)
-  const totalAReceber = vendas.reduce((s, v) => s + calcularTotalComprador(v.valor_arremate || 0), 0)
-  const totalComissoes = vendas.reduce((s, v) => s + calcularComissaoComprador(v.valor_arremate || 0), 0)
+  const totalAReceber = vendas.reduce((s, v) => s + calcularTotalComprador(v.valor_arremate || 0, v.comissao_comprador_pct), 0)
+  const totalComissoes = vendas.reduce((s, v) => s + calcularComissaoComprador(v.valor_arremate || 0, v.comissao_comprador_pct), 0)
   const totalCustos = custos.reduce((s, c) => s + (c.valor || 0), 0)
   const resultadoLiquido = totalComissoes - totalCustos
 

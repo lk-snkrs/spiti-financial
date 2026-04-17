@@ -321,6 +321,7 @@ function ModalNovaVenda({ clientes, lotesDisponiveis, vendas, onClose, onSave })
   const [origem, setOrigem] = useState('leiloesbr')
   const [valorArremate, setValorArremate] = useState('')
   const [valorConsignante, setValorConsignante] = useState('')
+  const [comissaoCompradorPct, setComissaoCompradorPct] = useState('')
   const [notas, setNotas] = useState('')
   const [saving, setSaving] = useState(false)
   const [erro, setErro] = useState(null)
@@ -394,6 +395,7 @@ function ModalNovaVenda({ clientes, lotesDisponiveis, vendas, onClose, onSave })
     const clienteInfo = cliente === 'novo' ? null : clientesAtivos.find(c => clienteKey(c) === cliente)
     const nomeCliente = cliente === 'novo' ? novoClienteNome : clienteInfo?.nome || ''
 
+    const comissaoPct = isPosLeilao && comissaoCompradorPct !== '' ? parseFloat(comissaoCompradorPct) : null
     const vendasData = lotesSelecionados.map(loteInfo => ({
       leilao_id: 'spiti9',
       lote: loteInfo.lote,
@@ -402,6 +404,7 @@ function ModalNovaVenda({ clientes, lotesDisponiveis, vendas, onClose, onSave })
       comprador_id: clienteInfo?.id || null,
       comprador_cartela: clienteInfo?.cartela || null,
       valor_arremate: valorNum,
+      comissao_comprador_pct: comissaoPct,
       data_venda: new Date().toISOString().split('T')[0],
       origem: origem,
       notas: notas,
@@ -540,10 +543,11 @@ function ModalNovaVenda({ clientes, lotesDisponiveis, vendas, onClose, onSave })
               placeholder="0" />
           </div>
 
-          {/* Bloco pós-leilão: valor ao consignante */}
+          {/* Bloco pós-leilão: valor ao consignante + comissão do comprador */}
           {isPosLeilao && (
-            <div style={{ background: '#C9A84C20', border: `1px solid ${GOLD}40` }} className="rounded-xl p-3 space-y-2">
-              <p className="text-xs" style={{ color: GOLD }}>🏷️ Pós-Leilão — Repasse ao consignante</p>
+            <div style={{ background: '#C9A84C20', border: `1px solid ${GOLD}40` }} className="rounded-xl p-3 space-y-3">
+              <p className="text-xs" style={{ color: GOLD }}>🏷️ Pós-Leilão — Comissões customizadas</p>
+
               <div>
                 <label className="text-xs text-gray-400 block mb-1">Valor ao Consignante (R$)</label>
                 <input type="number" value={valorConsignante} onChange={e => setValorConsignante(e.target.value)}
@@ -552,11 +556,26 @@ function ModalNovaVenda({ clientes, lotesDisponiveis, vendas, onClose, onSave })
                   placeholder="Deixe vazio para usar o % padrão do lote" />
               </div>
               {valorArremate && valorConsignante && parseFloat(valorArremate) > 0 && (
-                <div className="text-2xs text-gray-400 grid grid-cols-2 gap-2 pt-1">
+                <div className="text-2xs text-gray-400 grid grid-cols-2 gap-2">
                   <span>Comissão SPITI: <span className="text-white font-mono">{formatCurrency(parseFloat(valorArremate) - parseFloat(valorConsignante || 0))}</span></span>
                   <span>% consignante: <span className="text-white font-mono">{(((parseFloat(valorArremate) - parseFloat(valorConsignante || 0)) / parseFloat(valorArremate)) * 100).toFixed(2)}%</span></span>
                 </div>
               )}
+
+              <div>
+                <label className="text-xs text-gray-400 block mb-1">Comissão Comprador (%)</label>
+                <input type="number" step="0.01" value={comissaoCompradorPct} onChange={e => setComissaoCompradorPct(e.target.value)}
+                  style={{ background: DARK, border: `1px solid ${BORDER}` }}
+                  className="w-full rounded-xl px-3 py-2 text-sm text-white"
+                  placeholder="Deixe vazio para usar a tabela progressiva padrão" />
+                {valorArremate && comissaoCompradorPct !== '' && parseFloat(valorArremate) > 0 && (
+                  <div className="text-2xs text-gray-400 mt-1">
+                    Comissão comprador: <span className="text-white font-mono">
+                      {formatCurrency(parseFloat(valorArremate) * parseFloat(comissaoCompradorPct || 0) / 100)}
+                    </span>
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
@@ -615,7 +634,7 @@ function ModalPedido({ comprador, allCompradores, onClose, onSave, onAdicionarLo
 
   // Recalcular totais baseado em lotesLocal
   const arremateLocal = lotesLocal.reduce((sum, l) => sum + (l.valor || 0), 0)
-  const comissaoLocal = lotesLocal.reduce((sum, l) => sum + calcularComissaoComprador(l.valor || 0), 0)
+  const comissaoLocal = lotesLocal.reduce((sum, l) => sum + calcularComissaoComprador(l.valor || 0, l.comissao_comprador_pct), 0)
   const totalLocal = arremateLocal + (comissaoCustom !== null ? parseFloat(comissaoCustom) : comissaoLocal)
 
   // Carregar parcelas existentes
@@ -842,8 +861,8 @@ function ModalPedido({ comprador, allCompradores, onClose, onSave, onAdicionarLo
                     <tr><td colSpan={6} className="text-center py-6 text-gray-600">Nenhum lote neste pedido</td></tr>
                   ) : (
                     lotesLocal.map(l => {
-                      const comissao = calcularComissaoComprador(l.valor)
-                      const total = calcularTotalComprador(l.valor)
+                      const comissao = calcularComissaoComprador(l.valor, l.comissao_comprador_pct)
+                      const total = calcularTotalComprador(l.valor, l.comissao_comprador_pct)
                       const isEditing = editandoLote === l.lote
                       return (
                         <tr key={l.lote} className="hover:bg-white/[0.02] group" style={{ borderBottom: `1px solid ${BORDER}30` }}>
@@ -1147,10 +1166,10 @@ export default function Vendas() {
         })
       }
       const c = map.get(key)
-      c.lotes.push({ lote: v.lote, artista: v.artista, valor: v.valor_arremate })
+      c.lotes.push({ lote: v.lote, artista: v.artista, valor: v.valor_arremate, comissao_comprador_pct: v.comissao_comprador_pct })
       c.arremate += v.valor_arremate || 0
-      c.comissao += calcularComissaoComprador(v.valor_arremate || 0)
-      c.total += calcularTotalComprador(v.valor_arremate || 0)
+      c.comissao += calcularComissaoComprador(v.valor_arremate || 0, v.comissao_comprador_pct)
+      c.total += calcularTotalComprador(v.valor_arremate || 0, v.comissao_comprador_pct)
     })
 
     map.forEach((c, key) => {

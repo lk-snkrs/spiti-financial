@@ -45,7 +45,7 @@ export default function Resultado() {
         const totalArremate = vendasArr.reduce((s, v) => s + (v.valor_arremate || 0), 0)
 
         const comissaoCompradores = vendasArr.reduce((s, v) => {
-          return s + calcularComissaoComprador(v.valor_arremate || 0)
+          return s + calcularComissaoComprador(v.valor_arremate || 0, v.comissao_comprador_pct)
         }, 0)
 
         const comissaoConsignantes = vendasArr.reduce((s, v) => {
@@ -74,7 +74,7 @@ export default function Resultado() {
         const vendasDetalhadas = vendasArr.map(v => {
           const loteInfo = lotesMap[v.lote]
           const pct = loteInfo?.comissao_consignante_pct ?? 15
-          const comissaoC = calcularComissaoComprador(v.valor_arremate || 0)
+          const comissaoC = calcularComissaoComprador(v.valor_arremate || 0, v.comissao_comprador_pct)
           const comissaoK = (v.valor_arremate || 0) * (pct / 100)
           return {
             ...v,

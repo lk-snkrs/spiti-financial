@@ -205,7 +205,7 @@ function DrawerCliente({ cliente, vendas, lotes, cobrancas, onClose, onEdit, onD
 
   const totais = vendasCliente.reduce((acc, v) => {
     const valor = v.valor_arremate || 0
-    const comissao = calcularComissaoComprador(valor)
+    const comissao = calcularComissaoComprador(valor, v.comissao_comprador_pct)
     acc.arremate += valor
     acc.comissao += comissao
     acc.total += valor + comissao
@@ -327,7 +327,7 @@ function DrawerCliente({ cliente, vendas, lotes, cobrancas, onClose, onEdit, onD
                   <tbody>
                     {vendasCliente.map(v => {
                       const lote = lotesMap.get(v.lote)
-                      const comissao = calcularComissaoComprador(v.valor_arremate || 0)
+                      const comissao = calcularComissaoComprador(v.valor_arremate || 0, v.comissao_comprador_pct)
                       const st = statusLabel(v.lote)
                       return (
                         <tr key={v.id} className="border-b border-border/40">
@@ -398,7 +398,7 @@ export default function Clientes() {
         (!v.comprador_id && v.comprador_nome && normalizeName(v.comprador_nome) === cNorm)
       )
       const arremate = vendasCliente.reduce((s, v) => s + (v.valor_arremate || 0), 0)
-      const comissao = vendasCliente.reduce((s, v) => s + calcularComissaoComprador(v.valor_arremate || 0), 0)
+      const comissao = vendasCliente.reduce((s, v) => s + calcularComissaoComprador(v.valor_arremate || 0, v.comissao_comprador_pct), 0)
       return { ...c, ghost: false, nLotes: vendasCliente.length, arremate, comissao, total: arremate + comissao }
     })
 
@@ -417,7 +417,7 @@ export default function Clientes() {
 
     const ghosts = Array.from(ghostMap.values()).map(g => {
       const arremate = g.vendas.reduce((s, v) => s + (v.valor_arremate || 0), 0)
-      const comissao = g.vendas.reduce((s, v) => s + calcularComissaoComprador(v.valor_arremate || 0), 0)
+      const comissao = g.vendas.reduce((s, v) => s + calcularComissaoComprador(v.valor_arremate || 0, v.comissao_comprador_pct), 0)
       return {
         id: null,
         leilao_id: LEILAO_ID,

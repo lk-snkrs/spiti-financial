@@ -1,7 +1,11 @@
-// Calcula comissão do comprador (tabela progressiva tiered)
-// 10% até R$100k, 7.5% de R$100k a R$200k, 5% acima de R$200k
-export function calcularComissaoComprador(valorArremate) {
+// Calcula comissão do comprador.
+// Se overridePct for fornecido (pós-leilão), usa esse percentual flat.
+// Caso contrário usa tabela progressiva: 10% até R$100k, 7.5% de R$100k a R$200k, 5% acima.
+export function calcularComissaoComprador(valorArremate, overridePct) {
   if (valorArremate <= 0) return 0
+  if (overridePct != null && overridePct !== '' && !Number.isNaN(Number(overridePct))) {
+    return valorArremate * (Number(overridePct) / 100)
+  }
   let comissao = 0
   if (valorArremate <= 100000) {
     comissao = valorArremate * 0.10
@@ -13,8 +17,8 @@ export function calcularComissaoComprador(valorArremate) {
   return comissao
 }
 
-export function calcularTotalComprador(valorArremate) {
-  return valorArremate + calcularComissaoComprador(valorArremate)
+export function calcularTotalComprador(valorArremate, overridePct) {
+  return valorArremate + calcularComissaoComprador(valorArremate, overridePct)
 }
 
 export function formatCurrency(value) {

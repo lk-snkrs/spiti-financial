@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase'
 const allNavItems = [
   { path: '/', label: 'Dashboard', icon: '◈' },
   { path: '/lotes', label: 'Lotes', icon: '▣' },
+  { path: '/clientes', label: 'Clientes', icon: '◐' },
   { path: '/vendas', label: 'Vendas', icon: '⊞' },
   { path: '/receber', label: 'A Receber', icon: '↓' },
   { path: '/pagar', label: 'A Pagar', icon: '↑' },

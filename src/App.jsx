@@ -10,6 +10,7 @@ import Vendas from './pages/Vendas'
 import Custos from './pages/Custos'
 import Resultado from './pages/Resultado'
 import Lotes from './pages/Lotes'
+import Clientes from './pages/Clientes'
 
 // Usuários com acesso restrito
 const restrictedUsers = ['helena@spiti.art']
@@ -59,6 +60,7 @@ export default function App() {
                 <Route path="/custos" element={<RestrictedRoute user={user}><Custos /></RestrictedRoute>} />
                 <Route path="/resultado" element={<RestrictedRoute user={user}><Resultado /></RestrictedRoute>} />
                 <Route path="/lotes" element={<Lotes />} />
+                <Route path="/clientes" element={<Clientes />} />
               </Routes>
             </Layout>
           </ProtectedRoute>

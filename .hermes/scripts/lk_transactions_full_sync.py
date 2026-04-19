@@ -194,4 +194,10 @@ def main():
         print(f"\n[VERIFY] transactions_full: {result}", flush=True)
 
 if __name__ == "__main__":
-    main()
+    subprocess.run(["python3", "/root/.hermes/scripts/sync_log.py", "start", "lk_transactions_full_sync"], capture_output=True)
+    try:
+        main()
+        subprocess.run(["python3", "/root/.hermes/scripts/sync_log.py", "end", "lk_transactions_full_sync", "success"], capture_output=True)
+    except Exception as e:
+        subprocess.run(["python3", "/root/.hermes/scripts/sync_log.py", "end", "lk_transactions_full_sync", "failure", str(e)], capture_output=True)
+        raise

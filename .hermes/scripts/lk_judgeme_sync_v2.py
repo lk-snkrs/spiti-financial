@@ -144,7 +144,7 @@ def sync_reviews():
         print(f"  Done", flush=True)
 
 if __name__ == "__main__":
-    print("⭐ LK INTEL - JudgeMe Sync", flush=True)
+    subprocess.run(["python3", "/root/.hermes/scripts/sync_log.py", "start", "lk_judgeme_sync_v2"], capture_output=True)
     print("=" * 50, flush=True)
     start = time.time()
     try:
@@ -152,7 +152,9 @@ if __name__ == "__main__":
         elapsed = time.time() - start
         print(f"\n{'=' * 50}", flush=True)
         print(f"✅ JUDGEME SYNC DONE ({elapsed:.0f}s)", flush=True)
+        subprocess.run(["python3", "/root/.hermes/scripts/sync_log.py", "end", "lk_judgeme_sync_v2", "success"], capture_output=True)
     except Exception as e:
         print(f"❌ ERROR: {e}", flush=True)
+        subprocess.run(["python3", "/root/.hermes/scripts/sync_log.py", "end", "lk_judgeme_sync_v2", "failure", str(e)], capture_output=True)
         import traceback
         traceback.print_exc()

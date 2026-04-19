@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hermes System Health</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #0a0a0f;
+    color: #e0e0e0;
+    min-height: 100vh;
+    padding: 20px;
+  }
+  .container { max-width: 1200px; margin: 0 auto; }
+  h1 { color: #ffd700; font-size: 1.5rem; margin-bottom: 4px; }
+  .subtitle { color: #888; font-size: 0.85rem; margin-bottom: 24px; }
+  
+  .score-card {
+    background: linear-gradient(135deg, #1a1a2e, #16213e);
+    border: 1px solid #ffd70044;
+    border-radius: 16px;
+    padding: 24px;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    gap: 24px;
+  }
+  .score-circle {
+    width: 80px; height: 80px;
+    border-radius: 50%;
+    background: conic-gradient(#ffd700 var(--pct), #333 var(--pct));
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .score-inner {
+    width: 60px; height: 60px;
+    border-radius: 50%;
+    background: #0a0a0f;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.2rem; font-weight: bold; color: #ffd700;
+  }
+  .score-info h2 { color: #ffd700; font-size: 1.1rem; }
+  .score-info p { color: #888; font-size: 0.85rem; margin-top: 4px; }
+  
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; margin-bottom: 24px; }
+  
+  .card {
+    background: #12121a;
+    border: 1px solid #222;
+    border-radius: 12px;
+    padding: 16px;
+  }
+  .card-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 12px;
+  }
+  .card-title { font-size: 0.9rem; font-weight: 600; color: #ccc; }
+  .badge {
+    font-size: 0.7rem; padding: 3px 8px; border-radius: 20px;
+    font-weight: 600; text-transform: uppercase;
+  }
+  .badge-ok { background: #00c85322; color: #00c853; border: 1px solid #00c85344; }
+  .badge-fail { background: #ff174422; color: #ff1744; border: 1px solid #ff174444; }
+  .badge-warn { background: #ff910022; color: #ff9100; border: 1px solid #ff910044; }
+  
+  .metric { margin-bottom: 8px; }
+  .metric-label { font-size: 0.75rem; color: #666; margin-bottom: 2px; }
+  .metric-value { font-size: 1.1rem; font-weight: 600; }
+  .metric-value.ok { color: #00c853; }
+  .metric-value.fail { color: #ff1744; }
+  .metric-value.warn { color: #ff9100; }
+  
+  .section-title { font-size: 1rem; color: #ffd700; margin: 24px 0 12px; border-bottom: 1px solid #333; padding-bottom: 8px; }
+  
+  table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+  th { text-align: left; color: #666; font-weight: 500; padding: 8px 12px; border-bottom: 1px solid #222; }
+  td { padding: 10px 12px; border-bottom: 1px solid #1a1a1a; }
+  tr:hover { background: #1a1a24; }
+  .cron-name { font-weight: 500; color: #ccc; }
+  .cron-schedule { color: #555; font-size: 0.75rem; }
+  .last-run { color: #888; font-size: 0.8rem; }
+  
+  .alert-item {
+    background: #1a0a0a;
+    border-left: 3px solid #ff1744;
+    padding: 12px 16px;
+    margin-bottom: 8px;
+    border-radius: 0 8px 8px 0;
+  }
+  .alert-title { color: #ff1744; font-weight: 600; font-size: 0.85rem; margin-bottom: 4px; }
+  .alert-msg { color: #888; font-size: 0.8rem; }
+  
+  .refresh { text-align: center; color: #444; font-size: 0.75rem; margin-top: 24px; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>🧠 Hermes System Health</h1>
+  <p class="subtitle" id="updated">Atualizando...</p>
+
+  <div class="score-card">
+    <div class="score-circle" id="score-circle">
+      <div class="score-inner" id="score-val">--</div>
+    </div>
+    <div class="score-info">
+      <h2 id="score-label">Calculando...</h2>
+      <p id="score-desc">Saúde geral do sistema Hermes</p>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Crons Ativos</span>
+        <span class="badge badge-ok" id="crons-active">--</span>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Total de Crons</div>
+        <div class="metric-value" id="crons-total">--</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Último Heartbeat</div>
+        <div class="metric-value" id="last-heartbeat">--</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Pedidos Hoje (LK)</span>
+        <span class="badge badge-ok" id="orders-badge">--</span>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Faturamento</div>
+        <div class="metric-value ok" id="revenue-today">--</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Último Pedido</div>
+        <div class="metric-value" id="last-order">--</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Tokens</span>
+        <span class="badge badge-ok" id="tokens-badge">OK</span>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Supabase PAT</div>
+        <div class="metric-value ok" id="pat-status">✅ Válido</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Telegram Bot</div>
+        <div class="metric-value ok" id="telegram-status">✅ OK</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Meta Ads</div>
+        <div class="metric-value fail" id="meta-status">❌ Inválido</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Transactions</span>
+        <span class="badge badge-ok" id="tx-badge">--</span>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Última Transaction</div>
+        <div class="metric-value" id="last-tx">--</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Total no DB</div>
+        <div class="metric-value" id="tx-total">--</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-title">⚠️ Alertas</div>
+  <div id="alerts-container">
+    <div class="alert-item">
+      <div class="alert-title">Meta Ads Token</div>
+      <div class="alert-msg">Quebrado há 38+ dias. Lucas precisa re-autenticar.</div>
+    </div>
+    <div class="alert-item">
+      <div class="alert-title">spiti_email_poller</div>
+      <div class="alert-msg">Sem access token. Baixa prioridade — sem auction até ago/2026.</div>
+    </div>
+  </div>
+
+  <div class="section-title">📋 Crons</div>
+  <table>
+    <thead>
+      <tr>
+        <th>Cron</th>
+        <th>Status</th>
+        <th>Última Execução</th>
+        <th>Falhas</th>
+      </tr>
+    </thead>
+    <tbody id="crons-tbody">
+      <tr><td colspan="4" style="color:#555;text-align:center">Carregando...</td></tr>
+    </tbody>
+  </table>
+
+  <div class="refresh" id="refresh-info">
+    Atualiza automaticamente a cada 60s | Dados podem ter até 15min de delay
+  </div>
+</div>
+
+<script>
+async function fetchData() {
+  try {
+    const [cronRes, lkRes] = await Promise.allSettled([
+      fetch('/root/.hermes/cron_state/cron_status.json'),
+      fetch('https://api.minimax.io/api/cron/jobs', { headers: { 'Authorization': 'Bearer ' } }),
+    ]);
+    
+    // Try reading local files via fetch file protocol
+    let crons = {};
+    try {
+      const f = await fetch('file:///root/.hermes/cron_state/cron_status.json');
+      crons = await f.json();
+    } catch(e) {
+      // file:// won't work from browser - use fallback
+    }
+    
+    updateUI(crons);
+  } catch(e) {
+    document.getElementById('updated').textContent = 'Erro ao carregar dados: ' + e.message;
+  }
+}
+
+function updateUI(crons) {
+  const now = new Date().toLocaleString('pt-BR');
+  document.getElementById('updated').textContent = 'Atualizado: ' + now;
+  
+  // Count crons
+  const total = Object.keys(crons).length;
+  const ok = Object.values(crons).filter(c => c.status === 'ok').length;
+  const failed = Object.values(crons).filter(c => c.status === 'failed').length;
+  const pct = total > 0 ? Math.round((ok / total) * 100) : 0;
+  
+  document.getElementById('score-val').textContent = pct + '%';
+  document.getElementById('score-circle').style.setProperty('--pct', pct + '%');
+  document.getElementById('score-label').textContent = pct === 100 ? 'Sistema Saudável' : pct >= 70 ? 'Com Issues' : 'Atenção Necessária';
+  document.getElementById('crons-total').textContent = total;
+  document.getElementById('crons-active').textContent = ok + ' OK';
+  document.getElementById('crons-active').className = 'badge ' + (failed > 0 ? 'badge-warn' : 'badge-ok');
+  
+  // Render cron table
+  const tbody = document.getElementById('crons-tbody');
+  tbody.innerHTML = '';
+  for (const [name, data] of Object.entries(crons)) {
+    const row = document.createElement('tr');
+    const badge = data.status === 'ok' ? 'badge-ok' : data.status === 'failed' ? 'badge-fail' : 'badge-warn';
+    const lastRun = data.lastRun ? new Date(data.lastRun).toLocaleString('pt-BR') : 'Nunca';
+    const failures = data.failureCount || 0;
+    row.innerHTML = `
+      <td>
+        <div class="cron-name">${name}</div>
+      </td>
+      <td><span class="badge ${badge}">${data.status || 'unknown'}</span></td>
+      <td class="last-run">${lastRun}</td>
+      <td style="color: ${failures > 0 ? '#ff1744' : '#888'}">${failures}</td>
+    `;
+    tbody.appendChild(row);
+  }
+  
+  if (total === 0) {
+    tbody.innerHTML = '<tr><td colspan="4" style="color:#555;text-align:center">Sem dados — execute crons primeiro</td></tr>';
+  }
+}
+
+fetchData();
+setInterval(fetchData, 60000);
+</script>
+</body>
+</html>

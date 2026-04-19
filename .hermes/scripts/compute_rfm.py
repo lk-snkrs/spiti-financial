@@ -5,10 +5,12 @@ Computes RFM scores from lk_intel.orders and populates customer_rfm table.
 Run: python3 compute_rfm.py
 Schedule: Weekly (Sunday 23:00)
 """
+import sys
+sys.path.insert(0, "/root/.hermes/scripts")
+from _hermes_config import PAT, SB_URL
 import requests, sys
 from datetime import datetime, timedelta
 
-PAT = "sbp_5cd916280ef631f32155ee303c19f0f15d69223d"
 PROJECT = "cnjimxglpktznenpbail"
 URL = f"https://api.supabase.com/v1/projects/{PROJECT}/database/query"
 

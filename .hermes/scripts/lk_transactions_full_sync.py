@@ -5,9 +5,11 @@ Usa Shopify Transactions API: GET /admin/api/2024-01/orders/{order_id}/transacti
 Inclui: AUTHORIZATION, SALE, CAPTURE, REFUND, VOID, etc.
 Checkpoint: /tmp/lk_tx_full_checkpoint.json
 """
+import sys
+sys.path.insert(0, "/root/.hermes/scripts")
+from _hermes_config import PAT, SB_URL
 import requests, time, json, sys, subprocess
 
-PAT = "sbp_5cd916280ef631f32155ee303c19f0f15d69223d"
 PROJECT = "cnjimxglpktznenpbail"
 SHOP = "lk-sneakerss"
 API_VER = "2024-01"

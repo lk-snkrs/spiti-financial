@@ -4,8 +4,14 @@ LK Intel - GA4 Sync v4
 Traffic, source/medium, product performance
 INCREMENTAL: uses sync_checkpoints, resumes from last date
 """
+import sys
+sys.path.insert(0, "/root/.hermes/scripts")
+from _hermes_config import PAT, SB_URL
 import json, time, requests, jwt
 from datetime import date, timedelta
+import sys
+sys.path.insert(0, "/root/.hermes/scripts")
+from _hermes_config import PAT, SB_URL
 import subprocess
 
 MGMT_TOKEN = "sbp_5cd916280ef631f32155ee303c19f0f15d69223d"

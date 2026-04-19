@@ -4,10 +4,16 @@ LK Collection Sorting — Batch Script
 Recebe handles via argumento e ordena apenas essas coleções.
 Uso: python3 lk_sort_batch.py batch1|lote2|lote3
 """
+import sys
+sys.path.insert(0, "/root/.hermes/scripts")
+from _hermes_config import PAT, SB_URL
 import requests, json, time, sys
 from datetime import datetime, timedelta
 
 SHOP = "lk-sneakerss.myshopify.com"
+import sys
+sys.path.insert(0, "/root/.hermes/scripts")
+from _hermes_config import PAT, SB_URL
 import subprocess
 TOKEN = subprocess.run(
     ["doppler", "secrets", "get", "SHOPIFY_ACCESS_TOKEN", "-p", "lc-keys", "-c", "prd", "--plain"],

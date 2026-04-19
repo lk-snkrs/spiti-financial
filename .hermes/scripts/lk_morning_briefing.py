@@ -6,8 +6,14 @@ LK Morning Briefing - COO Edition
 Dados: yesterday | Exclui outlier 09/04
 """
 
+import sys
+sys.path.insert(0, "/root/.hermes/scripts")
+from _hermes_config import PAT, SB_URL
 import requests, os
 from datetime import date, timedelta, datetime, timezone
+import sys
+sys.path.insert(0, "/root/.hermes/scripts")
+from _hermes_config import PAT, SB_URL
 import sys
 
 # Ler do env ou usar token direto (fallback)

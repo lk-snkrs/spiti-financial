@@ -4,10 +4,12 @@ Sync Audit Log — inserts audit trail records into lk_intel.sync_log.
 Call at the START and END of every sync script.
 Usage: python3 sync_log.py start|end <script_name> [details]
 """
+import sys
+sys.path.insert(0, "/root/.hermes/scripts")
+from _hermes_config import PAT, SB_URL
 import requests, sys, time
 from datetime import datetime
 
-PAT = "sbp_5cd916280ef631f32155ee303c19f0f15d69223d"
 PROJECT = "cnjimxglpktznenpbail"
 URL = f"https://api.supabase.com/v1/projects/{PROJECT}/database/query"
 

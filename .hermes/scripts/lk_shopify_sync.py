@@ -4,8 +4,14 @@ LK Intel - Incremental Shopify Sync
 Pulls only NEW/UPDATED records since last sync checkpoint.
 Runs every hour via cron. Zero dependency on OpenClaw.
 """
+import sys
+sys.path.insert(0, "/root/.hermes/scripts")
+from _hermes_config import PAT, SB_URL
 import json, time, requests
 from datetime import datetime, timedelta
+import sys
+sys.path.insert(0, "/root/.hermes/scripts")
+from _hermes_config import PAT, SB_URL
 import subprocess
 
 # ── Config ──

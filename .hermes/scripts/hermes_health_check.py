@@ -12,11 +12,13 @@ Checa:
 Uso: python3 hermes_health_check.py
 Saída: relatório Telegram ou stdout
 """
+import sys
+sys.path.insert(0, "/root/.hermes/scripts")
+from _hermes_config import PAT, SB_URL
 import requests, subprocess, sys, re, os
 from datetime import datetime
 
 # ── Config ──
-PAT = "sbp_5cd916280ef631f32155ee303c19f0f15d69223d"
 PROJECT = "cnjimxglpktznenpbail"
 TOKEN_API = "https://api.supabase.com/v1/projects"
 CRONS_API = "https://api.minimax.io/api/cron/jobs"

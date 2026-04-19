@@ -3,7 +3,13 @@
 LK Intel - Klaviyo Sync v2
 Campaigns, flows, lists
 """
+import sys
+sys.path.insert(0, "/root/.hermes/scripts")
+from _hermes_config import PAT, SB_URL
 import json, time, requests, urllib.parse
+import sys
+sys.path.insert(0, "/root/.hermes/scripts")
+from _hermes_config import PAT, SB_URL
 import subprocess
 
 MGMT_TOKEN = "sbp_5cd916280ef631f32155ee303c19f0f15d69223d"

@@ -4,9 +4,11 @@ Consequence Tracker — logs second-order effects of playbook actions.
 Run after each action: consequence_tracker.py <action_id> <expected> <observed> [severity]
 Schedule: After each playbook action
 """
+import sys
+sys.path.insert(0, "/root/.hermes/scripts")
+from _hermes_config import PAT, SB_URL
 import requests, sys, time
 
-PAT = "sbp_5cd916280ef631f32155ee303c19f0f15d69223d"
 PROJECT = "cnjimxglpktznenpbail"
 URL = f"https://api.supabase.com/v1/projects/{PROJECT}/database/query"
 

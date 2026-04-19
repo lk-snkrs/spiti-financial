@@ -5,10 +5,12 @@ Sends Telegram report with segment distribution and churn risk alerts.
 Run: python3 rfm_report.py
 Schedule: Weekly (Monday 09:00)
 """
+import sys
+sys.path.insert(0, "/root/.hermes/scripts")
+from _hermes_config import PAT, SB_URL
 import requests, time
 from datetime import datetime
 
-PAT = "sbp_5cd916280ef631f32155ee303c19f0f15d69223d"
 PROJECT = "cnjimxglpktznenpbail"
 URL = f"https://api.supabase.com/v1/projects/{PROJECT}/database/query"
 TG_TOKEN = "8704483790:AAGUfWgApYRWGgKvdnCoboUhjshJec1-974"

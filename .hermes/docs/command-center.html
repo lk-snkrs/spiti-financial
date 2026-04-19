@@ -1,0 +1,933 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🧠 Hermes Command Center</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  
+  :root {
+    --bg-primary: #0a0a0f;
+    --bg-secondary: #12121a;
+    --glass-bg: rgba(255, 255, 255, 0.03);
+    --glass-border: rgba(255, 255, 255, 0.08);
+    --accent-gold: #ffd700;
+    --accent-cyan: #00d4ff;
+    --accent-green: #00c853;
+    --accent-red: #ff1744;
+    --accent-orange: #ff9100;
+    --accent-purple: #b388ff;
+    --text-primary: #e8e8e8;
+    --text-secondary: #888;
+    --text-muted: #555;
+  }
+  
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg-primary);
+    background-image: 
+      radial-gradient(ellipse at 20% 0%, rgba(255, 215, 0, 0.05) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 100%, rgba(0, 212, 255, 0.03) 0%, transparent 50%);
+    color: var(--text-primary);
+    min-height: 100vh;
+    padding: 20px;
+    line-height: 1.5;
+  }
+  
+  .container { max-width: 1400px; margin: 0 auto; }
+  
+  /* Header */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+  .header-left h1 {
+    font-size: 1.8rem;
+    background: linear-gradient(135deg, var(--accent-gold), var(--accent-cyan));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .header-left .subtitle { color: var(--text-secondary); font-size: 0.85rem; margin-top: 4px; }
+  .header-right { display: flex; align-items: center; gap: 12px; }
+  .refresh-badge {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 20px;
+    padding: 8px 16px;
+    font-size: 0.75rem;
+    color: var(--accent-cyan);
+    backdrop-filter: blur(10px);
+  }
+  .status-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--accent-green);
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+  
+  /* Glass Cards */
+  .glass-card {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+    padding: 20px;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .glass-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  }
+  
+  /* Grid Layouts */
+  .grid-4 { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-bottom: 24px; }
+  .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 16px; margin-bottom: 24px; }
+  .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(450px, 1fr)); gap: 16px; margin-bottom: 24px; }
+  
+  /* Section Titles */
+  .section-title {
+    font-size: 1.1rem;
+    color: var(--accent-gold);
+    margin: 32px 0 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border-bottom: 1px solid var(--glass-border);
+    padding-bottom: 12px;
+  }
+  .section-title::before {
+    content: '';
+    width: 4px;
+    height: 20px;
+    background: linear-gradient(180deg, var(--accent-gold), var(--accent-orange));
+    border-radius: 2px;
+  }
+  
+  /* Score Card */
+  .score-card {
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.1), rgba(0, 212, 255, 0.05));
+    border: 1px solid rgba(255, 215, 0, 0.2);
+    border-radius: 20px;
+    padding: 24px;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+  .score-circle {
+    width: 90px; height: 90px;
+    border-radius: 50%;
+    background: conic-gradient(var(--accent-gold) var(--pct), rgba(255,255,255,0.1) var(--pct));
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    box-shadow: 0 0 30px rgba(255, 215, 0, 0.2);
+  }
+  .score-inner {
+    width: 70px; height: 70px;
+    border-radius: 50%;
+    background: var(--bg-primary);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.4rem; font-weight: bold;
+    background: linear-gradient(135deg, #1a1a2e, #16213e);
+  }
+  .score-info h2 { color: var(--accent-gold); font-size: 1.2rem; }
+  .score-info p { color: var(--text-secondary); font-size: 0.85rem; margin-top: 4px; }
+  .score-metrics { display: flex; gap: 24px; margin-left: auto; flex-wrap: wrap; }
+  .score-metric { text-align: center; }
+  .score-metric-value { font-size: 1.5rem; font-weight: 700; }
+  .score-metric-label { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; }
+  
+  /* Metric Cards */
+  .metric-card .card-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 16px;
+  }
+  .card-title { font-size: 0.9rem; font-weight: 600; color: var(--text-secondary); }
+  .card-icon { font-size: 1.5rem; }
+  
+  .metric { margin-bottom: 12px; }
+  .metric-label { font-size: 0.7rem; color: var(--text-muted); margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .metric-value { font-size: 1.2rem; font-weight: 600; }
+  .metric-value.ok { color: var(--accent-green); }
+  .metric-value.warn { color: var(--accent-orange); }
+  .metric-value.fail { color: var(--accent-red); }
+  .metric-value.info { color: var(--accent-cyan); }
+  
+  /* Progress Bars */
+  .progress-bar {
+    height: 6px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 3px;
+    overflow: hidden;
+    margin-top: 8px;
+  }
+  .progress-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.5s ease;
+  }
+  .progress-fill.green { background: linear-gradient(90deg, var(--accent-green), #00e676); }
+  .progress-fill.orange { background: linear-gradient(90deg, var(--accent-orange), #ffab40); }
+  .progress-fill.red { background: linear-gradient(90deg, var(--accent-red), #ff5252); }
+  .progress-fill.cyan { background: linear-gradient(90deg, var(--accent-cyan), #40c4ff); }
+  .progress-fill.purple { background: linear-gradient(90deg, var(--accent-purple), #e040fb); }
+  
+  /* Badges */
+  .badge {
+    font-size: 0.65rem; padding: 4px 10px; border-radius: 20px;
+    font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .badge-ok { background: rgba(0, 200, 83, 0.15); color: var(--accent-green); border: 1px solid rgba(0, 200, 83, 0.3); }
+  .badge-fail { background: rgba(255, 23, 68, 0.15); color: var(--accent-red); border: 1px solid rgba(255, 23, 68, 0.3); }
+  .badge-warn { background: rgba(255, 145, 0, 0.15); color: var(--accent-orange); border: 1px solid rgba(255, 145, 0, 0.3); }
+  .badge-info { background: rgba(0, 212, 255, 0.15); color: var(--accent-cyan); border: 1px solid rgba(0, 212, 255, 0.3); }
+  .badge-purple { background: rgba(179, 136, 255, 0.15); color: var(--accent-purple); border: 1px solid rgba(179, 136, 255, 0.3); }
+  
+  /* Tables */
+  table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+  th { text-align: left; color: var(--text-muted); font-weight: 500; padding: 12px 16px; border-bottom: 1px solid var(--glass-border); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px; }
+  td { padding: 14px 16px; border-bottom: 1px solid rgba(255,255,255,0.03); }
+  tr:hover { background: rgba(255,255,255,0.02); }
+  .cron-name { font-weight: 500; color: var(--text-primary); }
+  .cron-schedule { color: var(--text-muted); font-size: 0.75rem; }
+  .last-run { color: var(--text-secondary); font-size: 0.8rem; }
+  
+  /* Alert Items */
+  .alert-item {
+    background: rgba(255, 23, 68, 0.08);
+    border-left: 3px solid var(--accent-red);
+    padding: 14px 18px;
+    margin-bottom: 10px;
+    border-radius: 0 10px 10px 0;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .alert-item.warn {
+    background: rgba(255, 145, 0, 0.08);
+    border-left-color: var(--accent-orange);
+  }
+  .alert-item.info {
+    background: rgba(0, 212, 255, 0.08);
+    border-left-color: var(--accent-cyan);
+  }
+  .alert-icon { font-size: 1.2rem; flex-shrink: 0; }
+  .alert-content { flex: 1; }
+  .alert-title { font-weight: 600; font-size: 0.85rem; margin-bottom: 4px; }
+  .alert-msg { color: var(--text-secondary); font-size: 0.8rem; }
+  .alert-time { color: var(--text-muted); font-size: 0.7rem; margin-top: 4px; }
+  
+  /* Insights Cards */
+  .insight-card {
+    background: linear-gradient(135deg, rgba(179, 136, 255, 0.08), rgba(0, 212, 255, 0.05));
+    border: 1px solid rgba(179, 136, 255, 0.2);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 12px;
+  }
+  .insight-company { 
+    font-size: 0.7rem; 
+    text-transform: uppercase; 
+    letter-spacing: 1px;
+    color: var(--accent-purple);
+    margin-bottom: 8px;
+  }
+  .insight-metric { 
+    font-size: 1.8rem; 
+    font-weight: 700; 
+    color: var(--text-primary);
+    margin-bottom: 4px;
+  }
+  .insight-label { font-size: 0.8rem; color: var(--text-secondary); }
+  .insight-error { color: var(--accent-red); font-size: 0.85rem; }
+  
+  /* Process List */
+  .process-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+  }
+  .process-item:last-child { border-bottom: none; }
+  .process-name { font-weight: 500; color: var(--text-primary); font-size: 0.85rem; }
+  .process-pid { color: var(--text-muted); font-size: 0.75rem; margin-left: 8px; }
+  .process-stats { display: flex; gap: 16px; align-items: center; }
+  .process-cpu { color: var(--accent-cyan); font-size: 0.8rem; font-weight: 500; }
+  .process-mem { color: var(--accent-purple); font-size: 0.8rem; font-weight: 500; }
+  
+  /* Network Card */
+  .network-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+  }
+  .network-item:last-child { border-bottom: none; }
+  .network-name { font-weight: 600; color: var(--text-primary); font-size: 0.85rem; }
+  .network-stats { display: flex; gap: 20px; }
+  .network-stat { text-align: right; }
+  .network-stat-value { font-weight: 600; font-size: 0.85rem; }
+  .network-stat-label { font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; }
+  
+  /* Disk Item */
+  .disk-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+  }
+  .disk-item:last-child { border-bottom: none; }
+  .disk-info { flex: 1; }
+  .disk-name { font-weight: 500; font-size: 0.85rem; color: var(--text-primary); }
+  .disk-mount { font-size: 0.7rem; color: var(--text-muted); }
+  .disk-usage { display: flex; align-items: center; gap: 12px; width: 50%; }
+  .disk-bar { flex: 1; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; }
+  .disk-bar-fill { height: 100%; border-radius: 2px; }
+  .disk-percent { font-size: 0.8rem; font-weight: 600; min-width: 40px; text-align: right; }
+  
+  /* Footer */
+  .footer {
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    margin-top: 32px;
+    padding-top: 16px;
+    border-top: 1px solid var(--glass-border);
+  }
+  
+  /* Responsive */
+  @media (max-width: 768px) {
+    .score-metrics { margin-left: 0; width: 100%; justify-content: space-around; }
+    .grid-2 { grid-template-columns: 1fr; }
+    .header { flex-direction: column; align-items: flex-start; }
+  }
+  
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg-secondary); }
+  ::-webkit-scrollbar-thumb { background: var(--glass-border); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+</style>
+</head>
+<body>
+<div class="container">
+  
+  <!-- Header -->
+  <div class="header">
+    <div class="header-left">
+      <h1>🧠 Hermes Command Center</h1>
+      <p class="subtitle">Monitoramento unificado do ecossistema</p>
+    </div>
+    <div class="header-right">
+      <span class="refresh-badge">🔄 Auto-refresh: 60s</span>
+      <span class="status-dot" id="status-dot"></span>
+      <span style="font-size: 0.8rem; color: var(--text-secondary);" id="updated">Carregando...</span>
+    </div>
+  </div>
+
+  <!-- Score Card -->
+  <div class="score-card" id="score-card">
+    <div class="score-circle" id="score-circle">
+      <div class="score-inner" id="score-val">--</div>
+    </div>
+    <div class="score-info">
+      <h2 id="score-label">Calculando...</h2>
+      <p id="score-desc">Saúde geral do sistema</p>
+    </div>
+    <div class="score-metrics">
+      <div class="score-metric">
+        <div class="score-metric-value" id="metric-cpu" style="color: var(--accent-cyan);">--</div>
+        <div class="score-metric-label">CPU</div>
+      </div>
+      <div class="score-metric">
+        <div class="score-metric-value" id="metric-mem" style="color: var(--accent-purple);">--</div>
+        <div class="score-metric-label">Memória</div>
+      </div>
+      <div class="score-metric">
+        <div class="score-metric-value" id="metric-disk" style="color: var(--accent-orange);">--</div>
+        <div class="score-metric-label">Disk</div>
+      </div>
+      <div class="score-metric">
+        <div class="score-metric-value" id="metric-crons" style="color: var(--accent-green);">--</div>
+        <div class="score-metric-label">Crons OK</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick Stats Grid -->
+  <div class="grid-4">
+    <div class="glass-card metric-card">
+      <div class="card-header">
+        <span class="card-title">💻 Sistema</span>
+        <span class="badge badge-info" id="uptime-badge">Online</span>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Hostname</div>
+        <div class="metric-value info" id="hostname">--</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Uptime</div>
+        <div class="metric-value" id="uptime">--</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Processos</div>
+        <div class="metric-value" id="process-count">--</div>
+      </div>
+    </div>
+
+    <div class="glass-card metric-card">
+      <div class="card-header">
+        <span class="card-title">📊 CPU</span>
+        <span class="badge badge-ok" id="cpu-badge">Normal</span>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Uso Atual</div>
+        <div class="metric-value" id="cpu-percent">--</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Load Average (1m)</div>
+        <div class="metric-value" id="load-avg">--</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Cores</div>
+        <div class="metric-value" id="cpu-cores">--</div>
+      </div>
+    </div>
+
+    <div class="glass-card metric-card">
+      <div class="card-header">
+        <span class="card-title">🧠 Memória</span>
+        <span class="badge badge-ok" id="mem-badge">OK</span>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Usada</div>
+        <div class="metric-value" id="mem-used">--</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Disponível</div>
+        <div class="metric-value ok" id="mem-avail">--</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Swap</div>
+        <div class="metric-value" id="mem-swap">--</div>
+      </div>
+    </div>
+
+    <div class="glass-card metric-card">
+      <div class="card-header">
+        <span class="card-title">💾 Disco</span>
+        <span class="badge badge-ok" id="disk-badge">OK</span>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Raiz (/ Used)</div>
+        <div class="metric-value" id="disk-root">--</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">IO Read</div>
+        <div class="metric-value info" id="disk-read">--</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">IO Write</div>
+        <div class="metric-value info" id="disk-write">--</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Alerts Section -->
+  <div class="section-title">⚠️ Alertas Recentes</div>
+  <div class="grid-2">
+    <div class="glass-card" id="alerts-critical">
+      <div class="card-header">
+        <span class="card-title">🔴 Críticos</span>
+        <span class="badge badge-fail" id="critical-count">0</span>
+      </div>
+      <div id="critical-list"><p style="color: var(--text-muted); font-size: 0.85rem;">Nenhum alerta crítico</p></div>
+    </div>
+    <div class="glass-card" id="alerts-warn">
+      <div class="card-header">
+        <span class="card-title">🟡 Warnings</span>
+        <span class="badge badge-warn" id="warn-count">0</span>
+      </div>
+      <div id="warn-list"><p style="color: var(--text-muted); font-size: 0.85rem;">Nenhum warning</p></div>
+    </div>
+  </div>
+
+  <!-- Cron Jobs Section -->
+  <div class="section-title">⏰ Cron Jobs</div>
+  <div class="glass-card">
+    <table>
+      <thead>
+        <tr>
+          <th>Cron Job</th>
+          <th>Status</th>
+          <th>Schedule</th>
+          <th>Última Execução</th>
+          <th>Próx. Execução</th>
+        </tr>
+      </thead>
+      <tbody id="crons-tbody">
+        <tr><td colspan="5" style="color: var(--text-muted); text-align: center;">Carregando...</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Insights Section -->
+  <div class="section-title">📈 Cross-Company Insights</div>
+  <div class="grid-3" id="insights-grid">
+    <div class="glass-card">
+      <div class="card-header">
+        <span class="card-title">🏃 LK Sneakers</span>
+        <span class="badge badge-info">LK</span>
+      </div>
+      <div id="insight-lk"><p style="color: var(--text-muted);">Carregando...</p></div>
+    </div>
+    <div class="glass-card">
+      <div class="card-header">
+        <span class="card-title">🎨 Zipper Gallery</span>
+        <span class="badge badge-purple">Zipper</span>
+      </div>
+      <div id="insight-zipper"><p style="color: var(--text-muted);">Carregando...</p></div>
+    </div>
+    <div class="glass-card">
+      <div class="card-header">
+        <span class="card-title">🏛️ Spiti Financial</span>
+        <span class="badge badge-warn">Spiti</span>
+      </div>
+      <div id="insight-spiti"><p style="color: var(--text-muted);">Carregando...</p></div>
+    </div>
+  </div>
+
+  <!-- System Details -->
+  <div class="section-title">🔍 Detalhes do Sistema</div>
+  <div class="grid-2">
+    
+    <!-- Top Processes -->
+    <div class="glass-card">
+      <div class="card-header">
+        <span class="card-title">🔥 Top Processos (CPU)</span>
+      </div>
+      <div id="top-cpu-processes">
+        <p style="color: var(--text-muted); font-size: 0.85rem;">Carregando...</p>
+      </div>
+    </div>
+
+    <!-- Network -->
+    <div class="glass-card">
+      <div class="card-header">
+        <span class="card-title">🌐 Rede</span>
+      </div>
+      <div id="network-stats">
+        <p style="color: var(--text-muted); font-size: 0.85rem;">Carregando...</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Disk Partitions -->
+  <div class="section-title">💿 Partições de Disco</div>
+  <div class="glass-card" id="disk-partitions">
+    <p style="color: var(--text-muted); font-size: 0.85rem;">Carregando...</p>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    Hermes Command Center • Auto-refresh a cada 60s • Dados de /root/.hermes
+  </div>
+</div>
+
+<script>
+// Data URLs
+const DATA_URLS = {
+  monitorState: '/root/.hermes/hermes-agent/monitor-state.json',
+  cronJobs: '/root/.hermes/cron/jobs.json',
+  alertHistory: '/root/.hermes/hermes-agent/alert_history.json',
+  insights: '/root/.hermes/cross_company_insights/latest.json'
+};
+
+let refreshTimer;
+let dataCache = {};
+
+async function fetchJSON(url) {
+  try {
+    const res = await fetch(url + '?t=' + Date.now());
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return await res.json();
+  } catch (e) {
+    console.warn(`Failed to fetch ${url}:`, e.message);
+    return null;
+  }
+}
+
+async function fetchAllData() {
+  document.getElementById('updated').textContent = '🔄 Atualizando...';
+  
+  const [monitor, crons, alerts, insights] = await Promise.all([
+    fetchJSON(DATA_URLS.monitorState),
+    fetchJSON(DATA_URLS.cronJobs),
+    fetchJSON(DATA_URLS.alertHistory),
+    fetchJSON(DATA_URLS.insights)
+  ]);
+
+  dataCache = { monitor, crons, alerts, insights };
+  
+  updateUI();
+  
+  const now = new Date().toLocaleString('pt-BR');
+  document.getElementById('updated').textContent = 'Atualizado: ' + now;
+  document.getElementById('status-dot').style.background = 'var(--accent-green)';
+}
+
+function formatBytes(bytes) {
+  if (!bytes && bytes !== 0) return '--';
+  const gb = bytes / (1024**3);
+  if (gb >= 1) return gb.toFixed(1) + ' GB';
+  const mb = bytes / (1024**2);
+  if (mb >= 1) return mb.toFixed(0) + ' MB';
+  return bytes + ' B';
+}
+
+function formatUptime(startTime) {
+  if (!startTime) return '--';
+  const start = new Date(startTime);
+  const now = new Date();
+  const diff = now - start;
+  const days = Math.floor(diff / (1000*60*60*24));
+  const hours = Math.floor((diff % (1000*60*60*24)) / (1000*60*60));
+  const mins = Math.floor((diff % (1000*60*60)) / (1000*60));
+  if (days > 0) return `${days}d ${hours}h ${mins}m`;
+  if (hours > 0) return `${hours}h ${mins}m`;
+  return `${mins}m`;
+}
+
+function formatRelativeTime(timestamp) {
+  if (!timestamp) return '--';
+  const date = new Date(timestamp);
+  const now = new Date();
+  const diff = now - date;
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'Agora';
+  if (mins < 60) return `${mins}m atrás`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h atrás`;
+  const days = Math.floor(hours / 24);
+  return `${days}d atrás`;
+}
+
+function getColorClass(value, thresholds) {
+  if (value >= thresholds.critical) return 'fail';
+  if (value >= thresholds.warning) return 'warn';
+  return 'ok';
+}
+
+function updateUI() {
+  const { monitor, crons, alerts, insights } = dataCache;
+
+  // Update System Health
+  if (monitor) {
+    updateMonitorState(monitor);
+  }
+
+  // Update Cron Jobs
+  if (crons && crons.jobs) {
+    updateCronJobs(crons.jobs);
+  }
+
+  // Update Alerts
+  if (alerts) {
+    updateAlerts(alerts);
+  }
+
+  // Update Insights
+  if (insights) {
+    updateInsights(insights);
+  }
+
+  // Calculate overall score
+  updateScore();
+}
+
+function updateMonitorState(m) {
+  // Hostname & Uptime
+  document.getElementById('hostname').textContent = m.hostname || '--';
+  document.getElementById('uptime').textContent = formatUptime(m.uptime);
+  document.getElementById('process-count').textContent = m.processes?.count || '--';
+
+  // CPU
+  const cpuPct = m.cpu?.percent?.toFixed(1) || '--';
+  const cpuVal = document.getElementById('cpu-percent');
+  cpuVal.textContent = cpuPct + '%';
+  cpuVal.className = 'metric-value ' + (cpuPct > 80 ? 'warn' : cpuPct > 90 ? 'fail' : 'ok');
+  document.getElementById('load-avg').textContent = m.cpu?.load_avg?.[0]?.toFixed(2) || '--';
+  document.getElementById('cpu-cores').textContent = m.cpu?.count || '--';
+  
+  const cpuBadge = document.getElementById('cpu-badge');
+  if (cpuPct > 90) { cpuBadge.className = 'badge badge-fail'; cpuBadge.textContent = 'Crítico'; }
+  else if (cpuPct > 70) { cpuBadge.className = 'badge badge-warn'; cpuBadge.textContent = 'Alto'; }
+  else { cpuBadge.className = 'badge badge-ok'; cpuBadge.textContent = 'Normal'; }
+  
+  document.getElementById('metric-cpu').textContent = cpuPct + '%';
+
+  // Memory
+  const mem = m.memory?.virtual || {};
+  const memPct = mem.percent?.toFixed(1) || '--';
+  document.getElementById('mem-used').textContent = formatBytes(mem.used);
+  document.getElementById('mem-avail').textContent = formatBytes(mem.available);
+  document.getElementById('mem-swap').textContent = m.memory?.swap?.percent?.toFixed(1) + '%' || '--';
+  
+  const memBadge = document.getElementById('mem-badge');
+  if (memPct > 85) { memBadge.className = 'badge badge-fail'; memBadge.textContent = 'Crítico'; }
+  else if (memPct > 70) { memBadge.className = 'badge badge-warn'; memBadge.textContent = 'Alto'; }
+  else { memBadge.className = 'badge badge-ok'; memBadge.textContent = 'OK'; }
+  
+  document.getElementById('metric-mem').textContent = memPct + '%';
+
+  // Disk
+  const rootDisk = m.disk?.partitions?.find(p => p.mountpoint === '/');
+  const diskPct = rootDisk?.percent?.toFixed(0) || '--';
+  document.getElementById('disk-root').textContent = formatBytes(rootDisk?.used) + ' / ' + formatBytes(rootDisk?.total);
+  
+  const diskBadge = document.getElementById('disk-badge');
+  if (diskPct > 90) { diskBadge.className = 'badge badge-fail'; diskBadge.textContent = 'Crítico'; }
+  else if (diskPct > 75) { diskBadge.className = 'badge badge-warn'; diskBadge.textContent = 'Atenção'; }
+  else { diskBadge.className = 'badge badge-ok'; diskBadge.textContent = 'OK'; }
+  
+  document.getElementById('metric-disk').textContent = diskPct + '%';
+  
+  // Disk IO
+  document.getElementById('disk-read').textContent = formatBytes(m.disk?.io?.read_bytes);
+  document.getElementById('disk-write').textContent = formatBytes(m.disk?.io?.write_bytes);
+
+  // Top CPU Processes
+  const topCPU = m.processes?.by_cpu?.slice(0, 6) || [];
+  const cpuProcHTML = topCPU.length ? topCPU.map(p => `
+    <div class="process-item">
+      <div>
+        <span class="process-name">${p.name}</span>
+        <span class="process-pid">PID ${p.pid}</span>
+      </div>
+      <div class="process-stats">
+        <span class="process-cpu">${p.cpu_percent}%</span>
+        <span class="process-mem">${p.memory_percent?.toFixed(1)}%</span>
+      </div>
+    </div>
+  `).join('') : '<p style="color: var(--text-muted);">Sem dados</p>';
+  document.getElementById('top-cpu-processes').innerHTML = cpuProcHTML;
+
+  // Network
+  const mainNet = m.network?.per_nic?.eth0 || m.network?.total || {};
+  const netHTML = `
+    <div class="network-item">
+      <span class="network-name">🌐 eth0 (Principal)</span>
+      <div class="network-stats">
+        <div class="network-stat">
+          <div class="network-stat-value" style="color: var(--accent-green);">↑ ${formatBytes(mainNet.bytes_sent)}</div>
+          <div class="network-stat-label">Enviado</div>
+        </div>
+        <div class="network-stat">
+          <div class="network-stat-value" style="color: var(--accent-cyan);">↓ ${formatBytes(mainNet.bytes_recv)}</div>
+          <div class="network-stat-label">Recebido</div>
+        </div>
+      </div>
+    </div>
+  `;
+  document.getElementById('network-stats').innerHTML = netHTML;
+
+  // Disk Partitions
+  const partitions = m.disk?.partitions || [];
+  const relevantPartitions = partitions.filter(p => p.mountpoint === '/' || p.mountpoint === '/boot' || p.mountpoint === '/boot/efi');
+  const diskHTML = relevantPartitions.length ? relevantPartitions.map(p => {
+    const pct = p.percent || 0;
+    const colorClass = pct > 90 ? 'red' : pct > 75 ? 'orange' : 'green';
+    return `
+      <div class="disk-item">
+        <div class="disk-info">
+          <div class="disk-name">${p.device}</div>
+          <div class="disk-mount">${p.mountpoint} • ${formatBytes(p.total)}</div>
+        </div>
+        <div class="disk-usage">
+          <div class="disk-bar"><div class="disk-bar-fill ${colorClass}" style="width: ${pct}%"></div></div>
+          <span class="disk-percent" style="color: var(--accent-${colorClass === 'green' ? 'green' : colorClass === 'orange' ? 'orange' : 'red'})">${pct}%</span>
+        </div>
+      </div>
+    `;
+  }).join('') : '<p style="color: var(--text-muted);">Sem dados</p>';
+  document.getElementById('disk-partitions').innerHTML = diskHTML;
+}
+
+function updateCronJobs(jobs) {
+  const tbody = document.getElementById('crons-tbody');
+  
+  const sortedJobs = [...jobs].sort((a, b) => {
+    const stateOrder = { failed: 0, scheduled: 1, paused: 2 };
+    return (stateOrder[a.state] || 3) - (stateOrder[b.state] || 3);
+  });
+
+  const okCount = jobs.filter(j => j.last_status === 'ok').length;
+  document.getElementById('metric-crons').textContent = `${okCount}/${jobs.length}`;
+
+  tbody.innerHTML = sortedJobs.map(job => {
+    const statusClass = job.last_status === 'ok' ? 'badge-ok' : job.last_status === 'failed' ? 'badge-fail' : 'badge-warn';
+    const stateClass = job.state === 'scheduled' ? 'badge-ok' : job.state === 'paused' ? 'badge-warn' : 'badge-fail';
+    const lastRun = job.last_run_at ? formatRelativeTime(job.last_run_at) : 'Nunca';
+    const nextRun = job.next_run_at ? new Date(job.next_run_at).toLocaleString('pt-BR') : '--';
+    
+    return `
+      <tr>
+        <td>
+          <div class="cron-name">${job.name}</div>
+          <div class="cron-schedule">${job.schedule_display || job.schedule?.display || '--'}</div>
+        </td>
+        <td>
+          <span class="badge ${statusClass}">${job.last_status || 'never'}</span>
+          <span class="badge ${stateClass}" style="margin-left: 4px;">${job.state}</span>
+        </td>
+        <td>${job.schedule_display || '--'}</td>
+        <td class="last-run">${lastRun}</td>
+        <td class="last-run">${nextRun}</td>
+      </tr>
+    `;
+  }).join('');
+
+  if (!jobs.length) {
+    tbody.innerHTML = '<tr><td colspan="5" style="color: var(--text-muted); text-align: center;">Nenhum cron encontrado</td></tr>';
+  }
+}
+
+function updateAlerts(alerts) {
+  const critical = alerts.filter(a => a.level === 'CRITICAL').slice(0, 5);
+  const warnings = alerts.filter(a => a.level === 'WARNING').slice(0, 5);
+
+  document.getElementById('critical-count').textContent = critical.length;
+  document.getElementById('warn-count').textContent = warnings.length;
+
+  const criticalHTML = critical.length ? critical.map(a => `
+    <div class="alert-item">
+      <span class="alert-icon">🔴</span>
+      <div class="alert-content">
+        <div class="alert-title">${a.metric}</div>
+        <div class="alert-msg">${a.message || `Valor: ${a.value}% (threshold: ${a.threshold}%)`}</div>
+        <div class="alert-time">${formatRelativeTime(a.timestamp)}</div>
+      </div>
+    </div>
+  `).join('') : '<p style="color: var(--accent-green); font-size: 0.85rem;">✅ Nenhum alerta crítico</p>';
+  document.getElementById('critical-list').innerHTML = criticalHTML;
+
+  const warnHTML = warnings.length ? warnings.map(a => `
+    <div class="alert-item warn">
+      <span class="alert-icon">🟡</span>
+      <div class="alert-content">
+        <div class="alert-title">${a.metric}</div>
+        <div class="alert-msg">${a.message || `Valor: ${a.value}% (threshold: ${a.threshold}%)`}</div>
+        <div class="alert-time">${formatRelativeTime(a.timestamp)}</div>
+      </div>
+    </div>
+  `).join('') : '<p style="color: var(--accent-green); font-size: 0.85rem;">✅ Nenhum warning</p>';
+  document.getElementById('warn-list').innerHTML = warnHTML;
+}
+
+function updateInsights(data) {
+  const companies = data.companies || {};
+  
+  const formatCompanyInsight = (company, name) => {
+    if (!company.available) {
+      return `
+        <div class="insight-error">⚠️ ${company.error || 'Dados indisponíveis'}</div>
+      `;
+    }
+    return `
+      <div class="insight-metric">${company.revenue ? 'R$ ' + company.revenue.toLocaleString('pt-BR') : '--'}</div>
+      <div class="insight-label">Faturamento (${data.period_days || 7}d)</div>
+      <div style="margin-top: 12px;">
+        <div class="metric">
+          <div class="metric-label">Pedidos</div>
+          <div class="metric-value">${company.orders || 0}</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Clientes</div>
+          <div class="metric-value">${company.customers || 0}</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Ticket Médio</div>
+          <div class="metric-value" style="color: var(--accent-cyan);">${company.avg_order_value ? 'R$ ' + company.avg_order_value.toFixed(2) : '--'}</div>
+        </div>
+      </div>
+    `;
+  };
+
+  document.getElementById('insight-lk').innerHTML = formatCompanyInsight(companies.LK || {}, 'LK');
+  document.getElementById('insight-zipper').innerHTML = formatCompanyInsight(companies.Zipper || {}, 'Zipper');
+  document.getElementById('insight-spiti').innerHTML = formatCompanyInsight(companies.Spiti || {}, 'Spiti');
+}
+
+function updateScore() {
+  const { monitor, crons } = dataCache;
+  
+  let score = 100;
+  const issues = [];
+
+  // Check CPU
+  if (monitor?.cpu?.percent > 90) {
+    score -= 20;
+    issues.push('CPU Crítico');
+  } else if (monitor?.cpu?.percent > 70) {
+    score -= 10;
+    issues.push('CPU Alto');
+  }
+
+  // Check Memory
+  if (monitor?.memory?.virtual?.percent > 85) {
+    score -= 20;
+    issues.push('Memória Crítica');
+  } else if (monitor?.memory?.virtual?.percent > 70) {
+    score -= 10;
+    issues.push('Memória Alta');
+  }
+
+  // Check Disk
+  if (monitor?.disk?.partitions?.find(p => p.mountpoint === '/')?.percent > 90) {
+    score -= 20;
+    issues.push('Disco Crítico');
+  } else if (monitor?.disk?.partitions?.find(p => p.mountpoint === '/')?.percent > 75) {
+    score -= 10;
+    issues.push('Disco Alto');
+  }
+
+  // Check Cron failures
+  const failedCrons = crons?.jobs?.filter(j => j.last_status === 'failed').length || 0;
+  if (failedCrons > 0) {
+    score -= failedCrons * 5;
+    issues.push(`${failedCrons} cron(s) falhou`);
+  }
+
+  score = Math.max(0, Math.min(100, score));
+
+  document.getElementById('score-val').textContent = score + '%';
+  document.getElementById('score-circle').style.setProperty('--pct', score + '%');
+  
+  const label = score === 100 ? '🌟 Excelente' : score >= 80 ? '👍 Bom' : score >= 60 ? '⚠️ Atenção' : '🚨 Crítico';
+  document.getElementById('score-label').textContent = label;
+  document.getElementById('score-desc').textContent = issues.length ? issues.join(' • ') : 'Todos os sistemas operando normalmente';
+}
+
+// Initial load
+fetchAllData();
+
+// Auto-refresh every 60 seconds
+setInterval(fetchAllData, 60000);
+</script>
+</body>
+</html>

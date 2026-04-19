@@ -1,0 +1,14 @@
+{
+  "available": true,
+  "responsive": true,
+  "response_time": 0.5814108848571777,
+  "consecutive_failures": 0,
+  "circuit_breaker_open": false,
+  "circuit_breaker_resets_at": null,
+  "last_check": "2026-04-19T17:58:21.613209",
+  "last_success": null,
+  "last_error": null,
+  "error_message": null,
+  "memory_count": 39,
+  "api_key_configured": true
+}

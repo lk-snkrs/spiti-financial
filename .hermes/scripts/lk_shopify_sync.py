@@ -499,6 +499,11 @@ if __name__ == "__main__":
     start = time.time()
     
     try:
+        # Audit trail
+        import subprocess
+        subprocess.run(["python3", "/root/.hermes/scripts/sync_log.py", "start", "lk_shopify_sync", "Incremental sync all entities"],
+                      capture_output=True, timeout=10)
+
         sync_products_incremental()
         time.sleep(1)
         sync_variants_incremental()
@@ -512,7 +517,12 @@ if __name__ == "__main__":
         elapsed = time.time() - start
         print(f"\n{'=' * 50}", flush=True)
         print(f"✅ SHOPIFY SYNC DONE ({elapsed:.0f}s)", flush=True)
-        
+
+        # Audit trail
+        import subprocess
+        subprocess.run(["python3", "/root/.hermes/scripts/sync_log.py", "end", "lk_shopify_sync", f"Success — {elapsed:.0f}s"],
+                      capture_output=True, timeout=10)
+
         # Quick validation
         try:
             r = run_sql("""
@@ -530,5 +540,9 @@ if __name__ == "__main__":
             print(f"  (validation skipped: {e})", flush=True)
     except Exception as e:
         print(f"❌ ERROR: {e}", flush=True)
+        # Audit trail
+        import subprocess
+        subprocess.run(["python3", "/root/.hermes/scripts/sync_log.py", "end", "lk_shopify_sync", f"ERROR: {e}"],
+                      capture_output=True, timeout=10)
         import traceback
         traceback.print_exc()

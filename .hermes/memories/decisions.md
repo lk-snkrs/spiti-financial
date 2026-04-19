@@ -106,5 +106,26 @@
 | shop name de Shopify tem 2 padrões: f"https://{SHOP}/..." vs f"https://{SHOP}.myshopify.com/..." | 2026-04-19 |
 | Regex de validação precisa entender o padrão de cada script | 2026-04-19 |
 
+## VPS Brain Consolidation (19/04/2026)
+| Decisão | Detalhe | Data |
+|---------|---------|------|
+| Crons brain sync pausados | `227f3cc47955` (6am) + `364fb6bd4036` (10pm) — VPS não acessível | 2026-04-19 |
+| Brain sync via script nativo | `sync_hermes.sh` no VPS funciona — crons agent são redundantes | 2026-04-19 |
+| Proactive Insight Engine criado | `proactive_insight_engine.py` — análise automática de anomalias | 2026-04-19 |
+| Insight engine em /root/.hermes/scripts/ | Copiado para scripts dir + versionado | 2026-04-19 |
+
+### Proactive Insight Engine
+- **Script:** `/root/.hermes/scripts/proactive_insight_engine.py`
+- **Funcionalidades:** Detecta cost spikes, session drops, token anomalies, tool over-reliance, idle days, productivity trends
+- **Formato:** Suporta `--format gateway|terminal|json` e `--days N`
+- **Alertas:** Só envia se encontrar algo (regra: no news is good news)
+- **Rodar manualmente:** `python3 proactive_insight_engine.py --days 7 --format gateway`
+
+### Crons Brain Sync Pausados
+| Job ID | Nome | Motivo Pausa |
+|--------|------|-------------|
+| `227f3cc47955` | Hermes Brain Sync (6am) | SSH/script-based sync já existe via `sync_hermes.sh` na VPS |
+| `364fb6bd4036` | Hermes Brain Sync — Night (10pm) | Mesmo motivo — redundante com sync nativo |
+
 ## Fonte
 Sincronizado do cerebro-cimino (VPS: /root/cerebro-cimino) para hermes-brain (/root/hermes-brain)
